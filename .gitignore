@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.exe
+*.asar
+.env
+
+# ✅ Never commit your local PID file
+server.pid
+
+# OS clutter
+.DS_Store
+Thumbs.db

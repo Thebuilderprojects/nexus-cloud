@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Remote</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; display: flex; height: 100vh; overflow: hidden; user-select: none; }
+        .hidden { display: none !important; }
+        svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; display: inline-block; vertical-align: middle; }
+        #sidebar { width: 260px; background: #0f172a; color: #94a3b8; display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.05); z-index: 10; }
+        .brand { padding: 30px 20px; font-size: 20px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); letter-spacing: 0.5px; }
+        .brand svg { color: #3b82f6; width: 24px; height: 24px; filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5)); }
+        .nav-items { padding: 20px 12px; flex-grow: 1; }
+        .nav-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-weight: 500; font-size: 14px; margin-bottom: 4px; }
+        .nav-btn svg { opacity: 0.7; transition: all 0.2s ease; }
+        .nav-btn.active { background: rgba(255,255,255,0.05); color: #ffffff; }
+        .nav-btn.active svg { opacity: 1; color: #3b82f6; }
+        .nav-btn:hover:not(.active) { background: rgba(255,255,255,0.03); color: #e2e8f0; }
+        .nav-btn:hover:not(.active) svg { opacity: 1; }
+        .nav-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 12px; text-align: center; color: #64748b; }
+        #workspace { flex-grow: 1; display: flex; flex-direction: column; background: #f8fafc; position: relative; }
+        #top-bar { height: 60px; background: #ffffff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 30px; font-weight: 600; font-size: 14px; color: #475569; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+        .status-dot.offline { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+        #dashboard { display: flex; padding: 30px; gap: 30px; height: calc(100% - 60px); box-sizing: border-box; }
+        .panel { flex: 1; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.03); display: flex; flex-direction: column; overflow: hidden; }
+        .panel-header { padding: 20px 30px; border-bottom: 1px solid #f1f5f9; background: #ffffff; }
+        .panel-header h2 { margin: 0; font-size: 16px; font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 10px; }
+        .panel-content { padding: 30px; flex-grow: 1; display: flex; flex-direction: column; }
+        .info-text { color: #64748b; font-size: 14px; margin-top: 0; margin-bottom: 25px; line-height: 1.6; }
+        .cred-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: center; position: relative; overflow: hidden; }
+        .cred-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 8px 0; }
+        .cred-value { font-size: 32px; font-weight: 700; color: #0f172a; font-family: 'SF Mono', Consolas, monospace; letter-spacing: 3px; margin: 0 0 20px 0; }
+        .input-group { position: relative; margin-bottom: 16px; }
+        .input-group svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; transition: 0.3s ease; }
+        input { width: 100%; padding: 16px 16px 16px 45px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; box-sizing: border-box; transition: all 0.3s ease; background: #f8fafc; color: #0f172a; font-weight: 500; }
+        input:focus { outline: none; border-color: #3b82f6; background: #ffffff; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        button { padding: 16px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-primary { background: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); }
+        .btn-primary:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3); }
+        .btn-success { background: #10b981; color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); }
+        .btn-success:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3); }
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); box-shadow: none; margin-top: 20px; }
+        .btn-danger:hover { background: #ef4444; color: white; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3); }
+        #viewer-ui { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 100; }
+        video { width: 100%; height: 100%; object-fit: contain; cursor: none; display: block; }
+        #control-drawer { position: absolute; top: 50%; right: -240px; transform: translateY(-50%); width: 240px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-right: none; border-radius: 16px 0 0 16px; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; display: flex; flex-direction: column; padding: 24px; box-sizing: border-box; box-shadow: -10px 0 40px rgba(0,0,0,0.5); color: white; }
+        #control-drawer.open { right: 0; }
+        #drawer-handle { position: absolute; left: -45px; top: 50%; transform: translateY(-50%); width: 45px; height: 64px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-right: none; border-radius: 12px 0 0 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #94a3b8; transition: 0.2s; }
+        #drawer-handle:hover { color: white; background: rgba(30, 41, 59, 1); }
+        .drawer-btn { background: rgba(255,255,255,0.05); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.05); padding: 12px; margin-bottom: 12px; border-radius: 8px; cursor: pointer; justify-content: flex-start; width: 100%; }
+        .drawer-btn:hover { background: #3b82f6; color: white; border-color: #3b82f6; }
+        .btn-drawer-red { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+        .btn-drawer-red:hover { background: #ef4444; color: white; border-color: #ef4444; }
+        #connect-timeout { color: #ef4444; font-size: 13px; text-align: center; margin-top: 12px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="brand">
+            <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            Nexus Remote
+        </div>
+        <div class="nav-items">
+            <div class="nav-btn active">Remote Control</div>
+        </div>
+        <div class="nav-footer">Stable WebRTC Version</div>
+    </div>
+
+    <div id="workspace">
+        <div id="top-bar">
+            <div class="status-dot offline" id="status-dot"></div>
+            <span id="status-text">Connecting to Cloud...</span>
+        </div>
+        <div id="dashboard">
+
+            <!-- HOST PANEL -->
+            <div class="panel">
+                <div class="panel-header"><h2>Allow Remote Control</h2></div>
+                <div class="panel-content">
+                    <p class="info-text">Click below to generate a secure session ID and password. Share these with your partner.</p>
+                    <div id="host-setup" style="margin-top: auto;">
+                        <button class="btn-primary" onclick="startHosting()">Generate Secure Session</button>
+                    </div>
+                    <div id="host-active" class="hidden">
+                        <div class="cred-box">
+                            <p class="cred-label">Your ID</p>
+                            <div id="display-id" class="cred-value">---------</div>
+                            <p class="cred-label">Password</p>
+                            <div id="display-pass" class="cred-value" style="margin-bottom:0;">----</div>
+                        </div>
+                        <p id="host-status" style="text-align:center; color:#10b981; margin-top:20px;">Waiting for connection...</p>
+                        <button class="btn-danger" onclick="stopHosting()">Cancel Session</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEWER PANEL -->
+            <div class="panel">
+                <div class="panel-header"><h2>Control Remote Computer</h2></div>
+                <div class="panel-content">
+                    <p class="info-text">Enter the Partner ID and Password to start remote control.</p>
+                    <div style="flex-grow:1; margin-top:10px;">
+                        <div class="input-group">
+                            <input type="text" id="input-id" placeholder="Partner ID" maxlength="9">
+                        </div>
+                        <div class="input-group">
+                            <input type="password" id="input-pass" placeholder="Password" maxlength="4">
+                        </div>
+                        <div id="connect-timeout">Host took too long to respond. Please try again.</div>
+                    </div>
+                    <button class="btn-success" onclick="connectToHost()">Connect to Partner</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- FULL-SCREEN VIEWER -->
+    <div id="viewer-ui" class="hidden">
+        <video id="remote-video" autoplay playsinline></video>
+        <div id="control-drawer">
+            <div id="drawer-handle" onclick="toggleDrawer()">&#9776;</div>
+            <button class="drawer-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+            <button class="drawer-btn btn-drawer-red" onclick="disconnectViewer()">✕ Disconnect</button>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================
+        // IMPORTS
+        // ✅ ONE single require() for nut-js at the top — never again below
+        // =========================================================
+        const io       = require('socket.io-client');
+        const nutjs    = require('@nut-tree-fork/nut-js');
+        const mouse    = nutjs.mouse;
+        const keyboard = nutjs.keyboard;
+        const Key      = nutjs.Key;
+        const Button   = nutjs.Button;
+        const Point    = nutjs.Point;
+        const nutScreen = nutjs.screen;
+
+        // =========================================================
+        // SOCKET
+        // =========================================================
+        const socket = io('https://nexus-cloud-ctss.onrender.com', {
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 2000
+        });
+
+        let currentRoomId      = null;
+        let peerConnection     = null;
+        let localStream        = null;
+        let isViewerActive     = false;
+        let connectTimeoutTimer = null;
+
+        const video  = document.getElementById('remote-video');
+        const config = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        // =========================================================
+        // UI HELPERS
+        // =========================================================
+        function toggleDrawer() {
+            document.getElementById('control-drawer').classList.toggle('open');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement)
+                document.getElementById('viewer-ui').requestFullscreen().catch(() => {});
+            else
+                document.exitFullscreen();
+        }
+
+        function disconnectViewer() {
+            isViewerActive = false;
+            currentRoomId  = null;
+            if (peerConnection) { peerConnection.close(); peerConnection = null; }
+            video.srcObject = null;
+            document.getElementById('viewer-ui').classList.add('hidden');
+            document.getElementById('sidebar').classList.remove('hidden');
+            document.getElementById('workspace').classList.remove('hidden');
+        }
+
+        // =========================================================
+        // SOCKET STATUS
+        // =========================================================
+        socket.on('connect', () => {
+            document.getElementById('status-dot').classList.remove('offline');
+            document.getElementById('status-text').innerText = 'Connected to Cloud';
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('status-dot').classList.add('offline');
+            document.getElementById('status-text').innerText = 'Disconnected — Retrying...';
+        });
+
+        // =========================================================
+        // HOST: START / STOP
+        // =========================================================
+        async function startHosting() {
+            try {
+                localStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: 'always' },
+                    audio: true
+                });
+                socket.emit('request-host-info', (res) => {
+                    if (res.error) { alert(res.error); return; }
+                    currentRoomId = res.id;
+                    document.getElementById('display-id').innerText   = res.id;
+                    document.getElementById('display-pass').innerText  = res.password;
+                    document.getElementById('host-setup').classList.add('hidden');
+                    document.getElementById('host-active').classList.remove('hidden');
+                });
+                localStream.getVideoTracks()[0].onended = stopHosting;
+            } catch (err) {
+                alert('Screen sharing permission is required to host a session.');
+            }
+        }
+
+        function stopHosting() {
+            if (localStream)      { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+            if (currentRoomId)    socket.emit('stop-hosting', currentRoomId);
+            if (peerConnection)   { peerConnection.close(); peerConnection = null; }
+            document.getElementById('host-active').classList.add('hidden');
+            document.getElementById('host-setup').classList.remove('hidden');
+            document.getElementById('host-status').innerText    = 'Waiting for connection...';
+            document.getElementById('display-id').innerText     = '---------';
+            document.getElementById('display-pass').innerText   = '----';
+            currentRoomId = null;
+        }
+
+        socket.on('viewer-joined', async () => {
+            document.getElementById('host-status').innerText = 'Connected & Sharing!';
+            if (peerConnection) { peerConnection.close(); peerConnection = null; }
+
+            peerConnection = new RTCPeerConnection(config);
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            peerConnection.onicecandidate = (e) => {
+                if (e.candidate) socket.emit('signal', { room: currentRoomId, signal: e.candidate });
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('signal', { room: currentRoomId, signal: peerConnection.localDescription });
+        });
+
+        // =========================================================
+        // HOST: MOUSE EXECUTION
+        // =========================================================
+        socket.on('mouse-move', async (data) => {
+            try {
+                const w = await nutScreen.width();
+                const h = await nutScreen.height();
+                await mouse.setPosition(new Point(Math.round(data.x * w), Math.round(data.y * h)));
+            } catch (err) { /* ignore */ }
+        });
+
+        socket.on('mouse-click', async (data) => {
+    try {
+        const btn = data.type === 'right' ? Button.RIGHT : Button.LEFT;
+        await mouse.click(btn);
+    } catch (err) {
+        console.error('Mouse click failed:', err.message);
+    }
+});
+
+        // ✅ FIX: Uses top-level 'mouse' import — NO second require()
+        socket.on('mouse-scroll', async (data) => {
+            try {
+                if (data.delta > 0) await mouse.scrollDown(data.delta);
+                else if (data.delta < 0) await mouse.scrollUp(Math.abs(data.delta));
+            } catch (err) { /* ignore */ }
+        });
+
+        // =========================================================
+// Import RobotJS at the top of your script block
+const robot = require('robotjs');
+
+socket.on('key-press', (data) => {
+    try {
+        // RobotJS uses simple lowercase strings like 'enter', 'backspace', 'a', 'b'
+        // We map browser e.code to RobotJS format
+        const keyMap = {
+            'Enter': 'enter',
+            'Backspace': 'backspace',
+            'Space': 'space',
+            'Tab': 'tab',
+            'Escape': 'escape',
+            'ArrowUp': 'up',
+            'ArrowDown': 'down',
+            'ArrowLeft': 'left',
+            'ArrowRight': 'right',
+            'ShiftLeft': 'shift',
+            'ControlLeft': 'control',
+            'AltLeft': 'alt',
+            'MetaLeft': 'command'
+        };
+
+        let targetKey = keyMap[data.key];
+
+        if (!targetKey) {
+            // Convert "KeyA" -> "a" or "Digit1" -> "1"
+            targetKey = data.key.replace('Key', '').replace('Digit', '').toLowerCase();
+        }
+
+        if (targetKey) {
+            robot.keyTap(targetKey);
+        }
+    } catch (err) {
+        console.error('RobotJS Keyboard Error:', err);
+    }
+});
+
+        // =========================================================
+        // VIEWER: CONNECT
+        // =========================================================
+        function connectToHost() {
+            const id   = document.getElementById('input-id').value.trim();
+            const pass = document.getElementById('input-pass').value.trim();
+
+            if (!id || !pass) { alert('Please enter both ID and Password.'); return; }
+
+            document.getElementById('connect-timeout').style.display = 'none';
+
+            socket.emit('attempt-login', { id, password: pass }, (res) => {
+                if (res.success) {
+                    currentRoomId  = id;
+                    isViewerActive = true;
+                    document.getElementById('sidebar').classList.add('hidden');
+                    document.getElementById('workspace').classList.add('hidden');
+                    document.getElementById('viewer-ui').classList.remove('hidden');
+
+                    connectTimeoutTimer = setTimeout(() => {
+                        if (!video.srcObject)
+                            document.getElementById('connect-timeout').style.display = 'block';
+                    }, 15000);
+                } else {
+                    alert('Authentication Failed: ' + res.message);
+                }
+            });
+        }
+
+        // =========================================================
+        // WEBRTC SIGNAL HANDLER
+        // =========================================================
+        socket.on('signal', async (data) => {
+            const signal = data.signal || data;
+
+            if (!peerConnection && isViewerActive) {
+                peerConnection = new RTCPeerConnection(config);
+
+                peerConnection.ontrack = (e) => {
+                    video.srcObject = e.streams[0];
+                    video.play().catch(() => {});
+                    if (connectTimeoutTimer) { clearTimeout(connectTimeoutTimer); connectTimeoutTimer = null; }
+                };
+
+                peerConnection.onicecandidate = (e) => {
+                    if (e.candidate) socket.emit('signal', { room: currentRoomId, signal: e.candidate });
+                };
+            }
+
+            if (!peerConnection) return;
+
+            if (signal.type === 'offer') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                socket.emit('signal', { room: currentRoomId, signal: peerConnection.localDescription });
+            } else if (signal.type === 'answer') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+            } else if (signal.candidate) {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(signal));
+            }
+        });
+
+        // =========================================================
+        // VIEWER: MOUSE SENDING
+        // =========================================================
+        function getMappedCoordinates(clientX, clientY) {
+            if (!video.videoWidth) return null;
+            const rect = video.getBoundingClientRect();
+            const vr   = video.videoWidth / video.videoHeight;
+            const cr   = rect.width / rect.height;
+            let rw, rh, ox = 0, oy = 0;
+            if (cr > vr) { rh = rect.height; rw = rh * vr; ox = (rect.width - rw) / 2; }
+            else         { rw = rect.width;  rh = rw / vr; oy = (rect.height - rh) / 2; }
+            return {
+                x: Math.max(0, Math.min(1, (clientX - rect.left - ox) / rw)),
+                y: Math.max(0, Math.min(1, (clientY - rect.top  - oy) / rh))
+            };
+        }
+
+        video.addEventListener('mousemove', e => {
+            if (isViewerActive && currentRoomId) {
+                const c = getMappedCoordinates(e.clientX, e.clientY);
+                if (c) socket.emit('mouse-move', { ...c, room: currentRoomId });
+            }
+        });
+
+        video.addEventListener('mousedown', e => {
+            if (isViewerActive && currentRoomId && video.videoWidth) {
+                socket.emit('mouse-click', { type: e.button === 2 ? 'right' : 'left', room: currentRoomId });
+            }
+        });
+
+        video.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            if (isViewerActive && currentRoomId)
+                socket.emit('mouse-click', { type: 'right', room: currentRoomId });
+        });
+
+        video.addEventListener('wheel', e => {
+            e.preventDefault();
+            if (isViewerActive && currentRoomId)
+                socket.emit('mouse-scroll', { delta: Math.round(e.deltaY / 100), room: currentRoomId });
+        }, { passive: false });
+
+        // =========================================================
+        // VIEWER: KEYBOARD SENDING — single listener, no duplicates
+        // =========================================================
+        window.addEventListener('keydown', (e) => {
+            if (isViewerActive && currentRoomId) {
+                socket.emit('key-press', { key: e.code, room: currentRoomId });
+                if (e.ctrlKey || e.metaKey || e.key.startsWith('F') || e.key === 'Tab')
+                    e.preventDefault();
+            }
+        });
+
+    </script>
+</body>
+</html>

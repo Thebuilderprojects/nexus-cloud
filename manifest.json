@@ -1,0 +1,15 @@
+{
+  "name": "Nexus Remote Desktop",
+  "short_name": "Nexus Remote",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1005/1005141.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
