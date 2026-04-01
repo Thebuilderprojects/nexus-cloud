@@ -131,6 +131,24 @@
     </div>
 
     <script>
+        // At the top of your index.html script block
+let robot;
+try {
+    robot = require('robotjs');
+} catch (e) {
+    console.log("Running in Viewer mode: RobotJS not loaded.");
+}
+
+// Inside your socket.on('key-press') handler [cite: 2]
+socket.on('key-press', (data) => {
+    if (robot) { // Only attempt to type if the library is loaded
+        try {
+            robot.keyTap(data.key.toLowerCase().replace('key', ''));
+        } catch (err) {
+            console.error('Key tap failed:', err);
+        }
+    }
+});
         // =========================================================
         // IMPORTS
         // ✅ ONE single require() for nut-js at the top — never again below
